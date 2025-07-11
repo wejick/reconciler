@@ -20,3 +20,17 @@ func WriteUnmatchedResults(unmatchedResults []model.UnmatchedResult, filePath st
 
 	return nil
 }
+
+func WriteSummary(summary []model.ReconciliationSummary, filePath string) error {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if err := gocsv.MarshalFile(summary, file); err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"time"
 
 	"github.com/wejick/reconciler/internal/loader"
 	"github.com/wejick/reconciler/internal/mapreduce"
@@ -18,43 +16,9 @@ func main() {
 	queue = orchestrator.NewQueue(runReconcile)
 	go queue.Start()
 
+	// queue.AddJob(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), 2)
+
 	InitHTTPHandler(":8080")
-
-	txns, err := loader.LoadTransactions(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC))
-	if err != nil {
-		log.Fatal(err)
-	}
-	bankStatements, err := loader.LoadBankStatements(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	txMapper := mapreduce.MapTransaction(txns)
-	bankMapper := mapreduce.MapBankStatement(bankStatements)
-	txGroups := mapreduce.GetAllTransactionGroup(txMapper)
-	bankGroups := mapreduce.GetAllBankStatementGroup(bankMapper)
-	groups := mapreduce.CombineAndDedupList(txGroups, bankGroups)
-	txUnmatch, bankUnmatch := runReducer(groups, txMapper, bankMapper, 2)
-
-	fmt.Println("txUnmatch", txUnmatch)
-	fmt.Println("bankUnmatch", bankUnmatch)
-
-	totalTransactionsAmount := loader.GetTotalAmount(txns)
-	totalBankStatementsAmount := loader.GetBankTotalAmount(bankStatements)
-
-	summary := model.ReconciliationSummary{
-		TotalTransactionsProcessed: len(txns),
-		TotalMatchedTransactions:   len(txns) - len(txUnmatch),
-		TotalUnmatchedTransactions: len(txUnmatch) + len(bankUnmatch),
-		TotalDiscrepancies:         totalTransactionsAmount - totalBankStatementsAmount,
-	}
-
-	dateNow := time.Now().Format("2006-01-02")
-	totalUnmatched := append(txUnmatch, bankUnmatch...)
-	loader.WriteUnmatchedResults(totalUnmatched, fmt.Sprintf("report/unmatched_%s.csv", dateNow))
-
-	fmt.Printf("Summary: %+v\n", summary)
-	fmt.Printf("report file: %s\n", fmt.Sprintf("report/unmatched_%s.csv", dateNow))
 }
 
 func runReconcile(job orchestrator.Job) error {
@@ -85,7 +49,9 @@ func runReconcile(job orchestrator.Job) error {
 		TotalDiscrepancies:         totalTransactionsAmount - totalBankStatementsAmount,
 	}
 
-	fmt.Printf("Summary: %+v\n", summary)
+	totalUnmatched := append(txUnmatch, bankUnmatch...)
+	loader.WriteUnmatchedResults(totalUnmatched, fmt.Sprintf("report/unmatched_%s.csv", job.ID))
+	loader.WriteSummary([]model.ReconciliationSummary{summary}, fmt.Sprintf("report/summary_%s.csv", job.ID))
 
 	return nil
 }
