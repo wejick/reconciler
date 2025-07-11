@@ -1,0 +1,5 @@
+trxID,unique_identifier,amount,type,transactionTime,bank_name
+5,,140000,2,2021-01-01T10:00:00Z,
+6,,-2000,1,2021-01-01T10:00:00Z,
+7,,-3000,1,2021-01-01T10:00:00Z,
+,bca03,910000,2,2021-01-01T00:00:00Z,BCA
