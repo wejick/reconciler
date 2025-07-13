@@ -1,3 +1,7 @@
+// orchestrator
+// Orchestrator handle the job queue scheduling. It will run the job in the queue when a slot is available.
+// Current implementation there's only one slot available.
+// The design can be this simple because it's tied specific for this usecase only.
 package orchestrator
 
 import (

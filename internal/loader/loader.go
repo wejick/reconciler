@@ -25,9 +25,9 @@ var bankName []string = []string{"BCA", "BRI"}
 func LoadTransactions(beginningDate, endDate time.Time) ([]model.Transaction, error) {
 	transactions := []model.Transaction{}
 
-	for date := beginningDate; !date.After(endDate); date = date.AddDate(0, 0, 1) {
-		filePath := fmt.Sprintf("testdata/%s/transaction_1.csv", date.Format("01012006"))
-		txns, err := LoadSystemTransactions(filePath)
+	for _, date := range getDateInRange(beginningDate, endDate) {
+		filePath := fmt.Sprintf("testdata/%s/transaction_1.csv", date)
+		txns, err := loadTransactions(filePath)
 		if err != nil {
 			return nil, err
 		}
@@ -40,15 +40,15 @@ func LoadTransactions(beginningDate, endDate time.Time) ([]model.Transaction, er
 func LoadBankStatements(beginningDate, endDate time.Time) ([]model.BankStatement, error) {
 	bankStatements := []model.BankStatement{}
 
-	for date := beginningDate; !date.After(endDate); date = date.AddDate(0, 0, 1) {
+	for _, date := range getDateInRange(beginningDate, endDate) {
 		//read all files in the directory on correct date
-		files, err := os.ReadDir(fmt.Sprintf("testdata/%s", date.Format("01012006")))
+		files, err := os.ReadDir(fmt.Sprintf("testdata/%s", date))
 		if err != nil {
 			return nil, err
 		}
 		for _, file := range files {
-			filePath := fmt.Sprintf("testdata/%s/%s", date.Format("01012006"), file.Name())
-			statements, err := LoadBankTransactions(filePath)
+			filePath := fmt.Sprintf("testdata/%s/%s", date, file.Name())
+			statements, err := loadBankStatement(filePath)
 			if err != nil {
 				if errors.Is(err, ErrBankNameNotFound) {
 					continue
@@ -61,7 +61,7 @@ func LoadBankStatements(beginningDate, endDate time.Time) ([]model.BankStatement
 	return bankStatements, nil
 }
 
-func LoadSystemTransactions(filePath string) ([]model.Transaction, error) {
+func loadTransactions(filePath string) ([]model.Transaction, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func LoadSystemTransactions(filePath string) ([]model.Transaction, error) {
 	return transactions, nil
 }
 
-func LoadBankTransactions(filePath string) ([]model.BankStatement, error) {
+func loadBankStatement(filePath string) ([]model.BankStatement, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -131,4 +131,12 @@ func GetTotalUnmatchedAmount(unmatchedResults []model.UnmatchedResult) float64 {
 		total += result.Amount
 	}
 	return total
+}
+
+func getDateInRange(beginningDate, endDate time.Time) []string {
+	dates := []string{}
+	for date := beginningDate; !date.After(endDate); date = date.AddDate(0, 0, 1) {
+		dates = append(dates, date.Format("02012006")) //ddmmyyyy
+	}
+	return dates
 }

@@ -22,6 +22,8 @@ func main() {
 }
 
 func runReconcile(job orchestrator.Job) error {
+	fmt.Println("runReconcile", job.DateStart, job.DateEnd, job.Concurrency)
+
 	txns, err := loader.LoadTransactions(job.DateStart, job.DateEnd)
 	if err != nil {
 		return err
